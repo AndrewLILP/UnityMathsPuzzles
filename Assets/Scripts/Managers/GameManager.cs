@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.InputSystem.XR.Haptics;
@@ -101,11 +101,38 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game State: Level In");
     }
+    // GameManager.cs - Replace the CompleteLevel method
 
     private void CompleteLevel()
     {
         Debug.Log("Game State: Level End");
-        ChangeState(GameState.LevelStart, levels[++currentLevelIndex]);
+
+        // 🔧 FIX: Add bounds checking before incrementing
+        if (currentLevelIndex + 1 < levels.Length)
+        {
+            // Safe to go to next level
+            currentLevelIndex++;
+            ChangeState(GameState.LevelStart, levels[currentLevelIndex]);
+        }
+        else
+        {
+            // No more levels - game is complete
+            Debug.Log("All levels completed! Starting Game End sequence.");
+            ChangeState(GameState.GameEnd, currentLevel);
+        }
+    }
+
+    // 🆕 NEW: Add method for puzzle-specific game over
+    public void TriggerGameOver(string reason)
+    {
+        Debug.Log($"Game Over triggered: {reason}");
+        ChangeState(GameState.GameOver, currentLevel);
+    }
+
+    // 🆕 NEW: Add method to check if this is the final level
+    public bool IsFinalLevel()
+    {
+        return currentLevelIndex >= levels.Length - 1;
     }
 
     private void GameEnd()

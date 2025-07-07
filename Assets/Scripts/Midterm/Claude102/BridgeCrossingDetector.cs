@@ -164,13 +164,13 @@ public class BridgeCrossingDetector : MonoBehaviour
 
         // Return to invisible trigger state
         if (meshRenderer != null)
-            meshRenderer.enabled = false;
+            meshRenderer.enabled = false; // Make invisible
 
         if (boxCollider != null)
-            boxCollider.isTrigger = true;
+            boxCollider.isTrigger = true; // Make it a trigger again
 
         if (showDebugInfo)
-            Debug.Log($"{bridgeID}: Bridge reset to initial state");
+            Debug.Log($"{bridgeID}: Bridge reset to invisible trigger state");
     }
 
     // Public properties for external access

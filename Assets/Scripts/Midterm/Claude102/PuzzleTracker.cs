@@ -12,7 +12,7 @@ public class PuzzleTracker : MonoBehaviour
     [Header("Impossible Puzzle Detection")]
     [SerializeField] private bool enableImpossibleDetection = true;
     [SerializeField] private float impossibleDetectionDelay = 3f; // Time to wait before showing "impossible" message
-    [SerializeField] private float cutsceneDelay = 5f; // Additional time before triggering cutscene
+    [SerializeField] private float transitionDelay = 4f; // Time to wait before transitioning to Puzzle 2
 
     [Header("Debug")]
     [SerializeField] private bool showDebugInfo = true;
@@ -31,8 +31,8 @@ public class PuzzleTracker : MonoBehaviour
     // Events for integration with GameManager/LevelManager
     public System.Action OnPuzzleCompleted;
     public System.Action OnPuzzleFailed;
-    public System.Action OnPuzzleImpossible; // New event for impossible detection
-    public System.Action OnPuzzleImpossibleCutscene; // New event for cutscene trigger
+    public System.Action OnPuzzleImpossible; // Event for impossible detection
+    public System.Action OnPuzzleTransitionToPuzzle2; // NEW: Direct transition event
     public System.Action<int, int> OnBridgeProgressChanged; // current, total
     public System.Action<int, int> OnLandmassProgressChanged; // current, total
 
@@ -146,6 +146,7 @@ public class PuzzleTracker : MonoBehaviour
             StartCoroutine(HandleImpossibleScenario());
         }
     }
+
     private IEnumerator HandleImpossibleScenario()
     {
         // Wait for the detection delay
@@ -163,33 +164,81 @@ public class PuzzleTracker : MonoBehaviour
         }
 
         // Wait additional time for player to read message
-        yield return new WaitForSeconds(cutsceneDelay);
+        yield return new WaitForSeconds(transitionDelay);
 
         if (showDebugInfo)
-            Debug.Log("🎬 Triggering cutscene and level progression...");
+            Debug.Log("🔄 Starting direct transition to Puzzle 2...");
 
-        // Trigger cutscene event - Timeline system will handle everything from here
-        OnPuzzleImpossibleCutscene?.Invoke();
-
-        // TimelineCutsceneManager will handle the rest:
-        // - Play Königsberg timeline if available
-        // - Fall back to simple transition if no timeline
-        // - Call ForceEndLevel() when transition completes
-
-        // Only use direct fallback if NO Timeline system exists at all
-        TimelineCutsceneManager timeline = FindFirstObjectByType<TimelineCutsceneManager>();
-        if (timeline == null)
-        {
-            if (showDebugInfo)
-                Debug.Log("No TimelineCutsceneManager found - using direct level progression fallback");
-
-            LevelManager levelManager = FindFirstObjectByType<LevelManager>();
-            if (levelManager != null)
-            {
-                levelManager.ForceEndLevel(); // Direct bypass when no cutscene system
-            }
-        }
+        // SIMPLE DIRECT TRANSITION (No cutscene!)
+        StartDirectTransitionToPuzzle2();
     }
+
+    // NEW: Simple direct transition method
+    private void StartDirectTransitionToPuzzle2()
+    {
+        Debug.Log("🔄 Direct Transition: Königsberg → Path puzzle");
+
+        // Step 1: Disable Puzzle 1 tracker
+        this.enabled = false;
+        Debug.Log("✅ Disabled PuzzleTracker (Puzzle 1)");
+
+        // Step 2: Enable Puzzle 2 tracker
+        Puzzle2Tracker puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
+        if (puzzle2Tracker != null)
+        {
+            puzzle2Tracker.enabled = true;
+            Debug.Log("✅ Enabled Puzzle2Tracker");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ Puzzle2Tracker not found!");
+        }
+
+        // Step 3: Reset landmasses for Puzzle 2
+        SwitchLandmassesToPuzzle2();
+
+        // Step 4: Update UI for Puzzle 2
+        PuzzleUIManager uiManager = FindFirstObjectByType<PuzzleUIManager>();
+        if (uiManager != null)
+        {
+            uiManager.StartNextPuzzle(); // This will update to Puzzle 2
+            uiManager.SetMainText("Welcome to Puzzle 2: Path\n\nVisit all landmasses exactly once.\nYou cannot return to a landmass you've already visited!");
+        }
+
+        // Step 5: Trigger transition event
+        OnPuzzleTransitionToPuzzle2?.Invoke();
+
+        Debug.Log("✅ Direct transition to Puzzle 2 complete!");
+    }
+
+    private void SwitchLandmassesToPuzzle2()
+    {
+        // Reset landmasses
+        LandmassController[] landmasses = FindObjectsOfType<LandmassController>();
+        foreach (var landmass in landmasses)
+        {
+            landmass.ResetLandmass();
+            landmass.SetPuzzleMode(2); // Switch to Puzzle 2 mode
+        }
+        Debug.Log($"✅ Switched {landmasses.Length} landmasses to Puzzle 2 mode");
+
+        // NEW: Reset bridge cubes to invisible state
+        ResetBridgeCubesForPuzzle2();
+    }
+
+    private void ResetBridgeCubesForPuzzle2()
+    {
+        // Find all BridgeCrossingDetector components and reset them
+        BridgeCrossingDetector[] bridgeDetectors = FindObjectsOfType<BridgeCrossingDetector>();
+
+        foreach (var detector in bridgeDetectors)
+        {
+            detector.ResetBridge(); // This should make them invisible again
+        }
+
+        Debug.Log($"✅ Reset {bridgeDetectors.Length} bridge crossing detectors to invisible state");
+    }
+
     private void CompletePuzzle()
     {
         if (showDebugInfo)
@@ -267,7 +316,7 @@ public class PuzzleTracker : MonoBehaviour
         Debug.Log($"Impossible: {IsPuzzleImpossible}");
     }
 
-    // Manual trigger for testing - UPDATED with ForceEndLevel for consistency
+    // Manual trigger for testing
     [ContextMenu("Trigger Impossible Scenario")]
     public void DebugTriggerImpossible()
     {
@@ -296,5 +345,11 @@ public class PuzzleTracker : MonoBehaviour
 
         if (showDebugInfo)
             Debug.Log("🧪 Force tested impossible scenario - should trigger detection!");
+    }
+
+    [ContextMenu("Force Transition to Puzzle 2")]
+    public void DebugForceTransition()
+    {
+        StartDirectTransitionToPuzzle2();
     }
 }

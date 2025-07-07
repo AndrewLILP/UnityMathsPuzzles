@@ -11,17 +11,20 @@ public class LandmassController : MonoBehaviour
     [SerializeField] private Material visitedMaterial; // Optional material change when visited
     [SerializeField] private MeshRenderer meshRenderer;
 
+    [Header("Puzzle Mode")]
+    [SerializeField] private int puzzleMode = 1; // 1 = Königsberg, 2 = Path
+
     [Header("Debug")]
     [SerializeField] private bool showDebugInfo = true;
 
     private bool hasBeenVisited = false;
     private Material originalMaterial;
 
-    // NEW: References to both puzzle systems
+    // References to both puzzle systems
     private PuzzleTracker puzzleTracker;
     private Puzzle2Tracker puzzle2Tracker;
 
-    // NEW: Track which puzzle system is active
+    // Track which puzzle system is active
     private bool isUsingPuzzle2 = false;
 
     private void Start()
@@ -47,17 +50,17 @@ public class LandmassController : MonoBehaviour
         if (string.IsNullOrEmpty(landmassName))
             landmassName = landmassType.ToString();
 
-        // NEW: Check which puzzle system should be active
+        // Check which puzzle system should be active
         CheckActivePuzzleSystem();
     }
 
     private void Update()
     {
-        // NEW: Continuously check which puzzle system is active
+        // Continuously check which puzzle system is active
         CheckActivePuzzleSystem();
     }
 
-    // NEW: Determine which puzzle system is currently active
+    // Determine which puzzle system is currently active
     private void CheckActivePuzzleSystem()
     {
         bool shouldUsePuzzle2 = false;
@@ -78,6 +81,12 @@ public class LandmassController : MonoBehaviour
             shouldUsePuzzle2 = true;
         }
 
+        // Also check puzzle mode setting
+        if (puzzleMode == 2)
+        {
+            shouldUsePuzzle2 = true;
+        }
+
         // Switch puzzle systems if needed
         if (shouldUsePuzzle2 != isUsingPuzzle2)
         {
@@ -95,7 +104,7 @@ public class LandmassController : MonoBehaviour
         {
             if (isUsingPuzzle2)
             {
-                // NEW: Puzzle 2 logic - check for revisit
+                // Puzzle 2 logic - check for revisit
                 HandlePuzzle2Visit();
             }
             else
@@ -106,7 +115,7 @@ public class LandmassController : MonoBehaviour
         }
     }
 
-    // NEW: Handle visit for Puzzle 1 (original logic)
+    // Handle visit for Puzzle 1 (original logic)
     private void HandlePuzzle1Visit()
     {
         if (!hasBeenVisited)
@@ -121,7 +130,7 @@ public class LandmassController : MonoBehaviour
         }
     }
 
-    // NEW: Handle visit for Puzzle 2 (no revisit allowed)
+    // Handle visit for Puzzle 2 (no revisit allowed)
     private void HandlePuzzle2Visit()
     {
         if (puzzle2Tracker != null)
@@ -177,10 +186,11 @@ public class LandmassController : MonoBehaviour
         }
     }
 
-    // NEW: Force switch to specific puzzle system (for debugging)
+    // Force switch to specific puzzle system (for debugging)
     public void ForceSwitchToPuzzle2()
     {
         isUsingPuzzle2 = true;
+        puzzleMode = 2;
         ResetLandmass(); // Reset state when switching
 
         if (showDebugInfo)
@@ -190,19 +200,32 @@ public class LandmassController : MonoBehaviour
     public void ForceSwitchToPuzzle1()
     {
         isUsingPuzzle2 = false;
+        puzzleMode = 1;
         ResetLandmass(); // Reset state when switching
 
         if (showDebugInfo)
             Debug.Log($"🔄 {landmassName}: Forced switch to Puzzle 1");
     }
 
+    public void SetPuzzleMode(int puzzleNumber)
+    {
+        puzzleMode = puzzleNumber;
+
+        if (showDebugInfo)
+            Debug.Log($"🔄 {landmassName}: Set to Puzzle {puzzleNumber} mode");
+
+        // Force check which system to use
+        CheckActivePuzzleSystem();
+    }
+
     // Public getters
     public bool HasBeenVisited => hasBeenVisited;
     public LandmassType LandmassType => landmassType;
     public string LandmassName => landmassName;
-    public bool IsUsingPuzzle2 => isUsingPuzzle2; // NEW: Expose which puzzle system is active
+    public bool IsUsingPuzzle2 => isUsingPuzzle2;
+    public int PuzzleMode => puzzleMode;
 
-    // NEW: Context menu for debugging
+    // Context menu for debugging
     [ContextMenu("Switch to Puzzle 2")]
     private void DebugSwitchToPuzzle2()
     {
@@ -221,6 +244,7 @@ public class LandmassController : MonoBehaviour
         Debug.Log($"=== {landmassName} Debug State ===");
         Debug.Log($"Landmass Type: {landmassType}");
         Debug.Log($"Has Been Visited: {hasBeenVisited}");
+        Debug.Log($"Puzzle Mode: {puzzleMode}");
         Debug.Log($"Using Puzzle 2: {isUsingPuzzle2}");
         Debug.Log($"PuzzleTracker Found: {puzzleTracker != null}");
         Debug.Log($"Puzzle2Tracker Found: {puzzle2Tracker != null}");

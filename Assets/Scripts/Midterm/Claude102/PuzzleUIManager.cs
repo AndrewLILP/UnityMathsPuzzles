@@ -2,7 +2,7 @@
 using TMPro;
 
 /// <summary>
-/// Complete PuzzleUIManager with existing functionality + simple impossible puzzle handling
+/// Complete PuzzleUIManager with direct transition support (no cutscene)
 /// Handles bridge/landmass progress + puzzle transitions with simple text updates
 /// </summary>
 public class PuzzleUIManager : MonoBehaviour
@@ -14,7 +14,7 @@ public class PuzzleUIManager : MonoBehaviour
     [SerializeField] private GameObject completionPanel;
     [SerializeField] private GameObject resetButton;
 
-    [Header("Simple Text UI - NEW")]
+    [Header("Simple Text UI")]
     [SerializeField] private TMP_Text subtitleText; // Your existing subtitle textbox
     [SerializeField] private TMP_Text mainText; // Your existing main textbox
 
@@ -22,14 +22,16 @@ public class PuzzleUIManager : MonoBehaviour
     [SerializeField] private bool showDebugPanel = true;
     [SerializeField] private TMP_Text debugText;
 
-    [Header("Puzzle State - NEW")]
+    [Header("Puzzle State")]
     [SerializeField] private int currentPuzzleNumber = 1;
 
     private PuzzleTracker puzzleTracker;
+    private Puzzle2Tracker puzzle2Tracker;
 
     private void Start()
     {
         puzzleTracker = FindFirstObjectByType<PuzzleTracker>();
+        puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
 
         if (puzzleTracker == null)
         {
@@ -37,15 +39,21 @@ public class PuzzleUIManager : MonoBehaviour
             return;
         }
 
-        // Subscribe to original puzzle events
+        // Subscribe to Puzzle 1 events
         puzzleTracker.OnBridgeProgressChanged += UpdateBridgeProgress;
         puzzleTracker.OnLandmassProgressChanged += UpdateLandmassProgress;
         puzzleTracker.OnPuzzleCompleted += OnPuzzleCompleted;
         puzzleTracker.OnPuzzleFailed += OnPuzzleFailed;
-
-        // Subscribe to impossible puzzle events - NEW
         puzzleTracker.OnPuzzleImpossible += OnImpossibleDetected;
-        puzzleTracker.OnPuzzleImpossibleCutscene += OnCutsceneStart;
+        puzzleTracker.OnPuzzleTransitionToPuzzle2 += OnTransitionToPuzzle2;
+
+        // Subscribe to Puzzle 2 events if available
+        if (puzzle2Tracker != null)
+        {
+            puzzle2Tracker.OnLandmassProgressChanged += UpdateLandmassProgress;
+            puzzle2Tracker.OnPuzzleCompleted += OnPuzzle2Completed;
+            puzzle2Tracker.OnPuzzleFailed += OnPuzzle2Failed;
+        }
 
         // Initialize UI
         InitializeUI();
@@ -53,17 +61,23 @@ public class PuzzleUIManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Unsubscribe from original events
+        // Unsubscribe from Puzzle 1 events
         if (puzzleTracker != null)
         {
             puzzleTracker.OnBridgeProgressChanged -= UpdateBridgeProgress;
             puzzleTracker.OnLandmassProgressChanged -= UpdateLandmassProgress;
             puzzleTracker.OnPuzzleCompleted -= OnPuzzleCompleted;
             puzzleTracker.OnPuzzleFailed -= OnPuzzleFailed;
-
-            // Unsubscribe from impossible puzzle events - NEW
             puzzleTracker.OnPuzzleImpossible -= OnImpossibleDetected;
-            puzzleTracker.OnPuzzleImpossibleCutscene -= OnCutsceneStart;
+            puzzleTracker.OnPuzzleTransitionToPuzzle2 -= OnTransitionToPuzzle2;
+        }
+
+        // Unsubscribe from Puzzle 2 events
+        if (puzzle2Tracker != null)
+        {
+            puzzle2Tracker.OnLandmassProgressChanged -= UpdateLandmassProgress;
+            puzzle2Tracker.OnPuzzleCompleted -= OnPuzzle2Completed;
+            puzzle2Tracker.OnPuzzleFailed -= OnPuzzle2Failed;
         }
     }
 
@@ -77,7 +91,7 @@ public class PuzzleUIManager : MonoBehaviour
         if (completionPanel != null)
             completionPanel.SetActive(false);
 
-        // NEW: Initialize simple text UI
+        // Initialize simple text UI
         UpdatePuzzleUI();
     }
 
@@ -100,6 +114,7 @@ public class PuzzleUIManager : MonoBehaviour
         if (statusText != null)
             statusText.text = message;
     }
+
 
     private void OnPuzzleCompleted()
     {
@@ -126,20 +141,39 @@ public class PuzzleUIManager : MonoBehaviour
         }
     }
 
+    private void ClearPuzzle1UI()
+    {
+        // Hide bridge progress (Puzzle 2 doesn't use bridges)
+        if (bridgeProgressText != null)
+            bridgeProgressText.text = ""; // Clear bridge text
+
+        // Update status for Puzzle 2
+        UpdateStatusText("Puzzle 2: Visit all landmasses exactly once!");
+
+    }
+
     private void Update()
     {
         // Update debug info if enabled
-        if (showDebugPanel && debugText != null && puzzleTracker != null)
+        if (showDebugPanel && debugText != null)
         {
-            debugText.text = $"Debug Info:\n" +
-                           $"Bridges: {puzzleTracker.BridgesCrossed}/{puzzleTracker.RequiredBridges}\n" +
-                           $"Landmasses: {puzzleTracker.LandmassesVisited}/{puzzleTracker.RequiredLandmasses}\n" +
-                           $"Complete: {puzzleTracker.IsPuzzleComplete}";
+            if (currentPuzzleNumber == 1 && puzzleTracker != null)
+            {
+                debugText.text = $"Puzzle 1 Debug:\n" +
+                               $"Bridges: {puzzleTracker.BridgesCrossed}/{puzzleTracker.RequiredBridges}\n" +
+                               $"Landmasses: {puzzleTracker.LandmassesVisited}/{puzzleTracker.RequiredLandmasses}\n" +
+                               $"Complete: {puzzleTracker.IsPuzzleComplete}";
+            }
+            else if (currentPuzzleNumber == 2 && puzzle2Tracker != null)
+            {
+                debugText.text = $"Puzzle 2 Debug:\n" +
+                               $"Landmasses: {puzzle2Tracker.LandmassesVisited}/{puzzle2Tracker.RequiredLandmasses}\n" +
+                               $"Complete: {puzzle2Tracker.IsPuzzleComplete}";
+            }
         }
     }
 
-    // === NEW SIMPLE METHODS ===
-
+    // === PUZZLE UI METHODS ===
     private void UpdatePuzzleUI()
     {
         // Update subtitle based on puzzle number
@@ -151,7 +185,7 @@ public class PuzzleUIManager : MonoBehaviour
                     subtitleText.text = "Puzzle 1: 7 Bridges of Königsberg";
                     break;
                 case 2:
-                    subtitleText.text = "Puzzle 2: Graph Theory Basics";
+                    subtitleText.text = "Puzzle 2: Path";
                     break;
                 default:
                     subtitleText.text = $"Puzzle {currentPuzzleNumber}";
@@ -165,57 +199,103 @@ public class PuzzleUIManager : MonoBehaviour
             switch (currentPuzzleNumber)
             {
                 case 1:
-                    mainText.text = "Cross as many bridges as possible. Try to cross all 7 bridges exactly once.";
+                    mainText.text = "Cross all 7 bridges exactly once.\n\nTry to visit every landmass and cross every bridge!";
                     break;
                 case 2:
-                    mainText.text = "Welcome to Puzzle 2! Apply what you learned about graph theory.";
+                    mainText.text = "🎯 Puzzle 2: Path Challenge\n\nVisit all 4 landmasses exactly once.\n\n⚠️ You cannot return to a landmass you've already visited!\n\nPlan your route carefully!";
                     break;
                 default:
                     mainText.text = "Complete the challenge.";
                     break;
             }
         }
+
+        Debug.Log($"Updated UI for Puzzle {currentPuzzleNumber}");
     }
 
     private void OnImpossibleDetected()
     {
-        Debug.Log("Impossible puzzle detected - updating UI");
+        Debug.Log("Impossible puzzle detected - showing discovery message");
 
+        ShowPuzzleTransitionMessage();
+        UpdateStatusText("Mathematical discovery: The puzzle is impossible!");
+    }
+
+    public void ShowPuzzleTransitionMessage()
+    {
         if (mainText != null)
         {
             // Get current progress
             int bridgesCrossed = puzzleTracker != null ? puzzleTracker.BridgesCrossed : 6;
 
             // Show discovery message
-            mainText.text = $"You crossed {bridgesCrossed} bridges and visited all landmasses.\n\n" +
+            mainText.text = $"🎉 Mathematical Discovery!\n\n" +
+                           $"You crossed {bridgesCrossed} bridges and visited all landmasses.\n\n" +
                            "Mathematician Leonhard Euler proved in 1736 that crossing all 7 bridges exactly once is impossible.\n\n" +
-                           "This problem founded the field of graph theory!";
+                           "This problem founded the field of graph theory!\n\n" +
+                           "Preparing next challenge...";
         }
-
-        // Also update status text
-        UpdateStatusText("Mathematical discovery: The puzzle is impossible!");
     }
 
-    private void OnCutsceneStart()
+    private void OnTransitionToPuzzle2()
     {
-        Debug.Log("Starting transition to next puzzle");
-
-        if (mainText != null)
-        {
-            mainText.text = "Preparing next challenge...";
-        }
-
-        UpdateStatusText("Transitioning to next puzzle...");
+        Debug.Log("Transitioning to Puzzle 2");
+        StartNextPuzzle();
     }
-
+    
     public void StartNextPuzzle()
     {
         currentPuzzleNumber++;
+
+        // Clear Puzzle 1 specific UI
+        ClearPuzzle1UI();
+
+        // Update puzzle UI
         UpdatePuzzleUI();
-        UpdateStatusText("New puzzle ready!");
+
+        // Reset progress displays for new puzzle
+        if (currentPuzzleNumber == 2)
+        {
+            UpdateBridgeProgress(0, 0); // Hide bridge progress for Puzzle 2
+            UpdateLandmassProgress(0, 4); // Reset landmass count for Puzzle 2
+        }
+
+        Debug.Log($"Started Puzzle {currentPuzzleNumber}");
     }
 
-    // Public methods for Timeline or other systems to call
+    // === PUZZLE 2 EVENT HANDLERS ===
+
+    private void OnPuzzle2Completed()
+    {
+        UpdateStatusText("🎉 PUZZLE 2 COMPLETED! You visited all landmasses without returning!");
+
+        if (mainText != null)
+        {
+            mainText.text = "🎉 Excellent!\n\n" +
+                           "You successfully completed the Path puzzle!\n\n" +
+                           "You visited all landmasses exactly once without returning to any.\n\n" +
+                           "This demonstrates a fundamental concept in graph theory!";
+        }
+
+        if (completionPanel != null)
+            completionPanel.SetActive(true);
+    }
+
+    private void OnPuzzle2Failed()
+    {
+        UpdateStatusText("❌ Puzzle 2 Failed - You revisited a landmass!");
+
+        if (mainText != null)
+        {
+            mainText.text = "⚠️ Puzzle Reset!\n\n" +
+                           "You returned to a landmass you already visited.\n\n" +
+                           "In a Path puzzle, you can only visit each landmass once.\n\n" +
+                           "Try again!";
+        }
+    }
+
+    // === PUBLIC METHODS FOR EXTERNAL SYSTEMS ===
+
     public void SetMainText(string text)
     {
         if (mainText != null)
@@ -236,4 +316,18 @@ public class PuzzleUIManager : MonoBehaviour
 
     // Getters for other systems
     public int CurrentPuzzleNumber => currentPuzzleNumber;
+
+    // === DEBUG METHODS ===
+
+    [ContextMenu("Test Impossible Message")]
+    public void DebugTestImpossibleMessage()
+    {
+        OnImpossibleDetected();
+    }
+
+    [ContextMenu("Test Puzzle 2 Transition")]
+    public void DebugTestPuzzle2Transition()
+    {
+        StartNextPuzzle();
+    }
 }

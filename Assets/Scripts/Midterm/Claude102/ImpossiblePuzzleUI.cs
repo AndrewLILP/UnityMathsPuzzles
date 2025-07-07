@@ -4,7 +4,7 @@ using System.Collections;
 
 /// <summary>
 /// UI Manager for handling the "impossible puzzle" revelation
-/// Shows educational message about the Seven Bridges of Königsberg
+/// UPDATED: Works with direct transitions (no cutscene)
 /// </summary>
 public class ImpossiblePuzzleUI : MonoBehaviour
 {
@@ -12,12 +12,10 @@ public class ImpossiblePuzzleUI : MonoBehaviour
     [SerializeField] private GameObject impossiblePanel; // Main panel to show
     [SerializeField] private TMP_Text impossibleTitleText; // Title text
     [SerializeField] private TMP_Text impossibleMessageText; // Main message
-    [SerializeField] private TMP_Text countdownText; // Countdown to cutscene (optional)
 
     [Header("Animation Settings")]
     [SerializeField] private bool useTypewriterEffect = true;
     [SerializeField] private float typewriterSpeed = 0.05f;
-    [SerializeField] private bool showCountdown = true;
 
     [Header("Audio (Optional)")]
     [SerializeField] private AudioSource audioSource;
@@ -46,9 +44,8 @@ public class ImpossiblePuzzleUI : MonoBehaviour
             return;
         }
 
-        // Subscribe to impossible puzzle events
+        // Subscribe to impossible puzzle events (UPDATED: No cutscene event)
         puzzleTracker.OnPuzzleImpossible += ShowImpossibleMessage;
-        puzzleTracker.OnPuzzleImpossibleCutscene += OnCutsceneTrigger;
 
         // Hide panel initially
         if (impossiblePanel != null)
@@ -61,7 +58,6 @@ public class ImpossiblePuzzleUI : MonoBehaviour
         if (puzzleTracker != null)
         {
             puzzleTracker.OnPuzzleImpossible -= ShowImpossibleMessage;
-            puzzleTracker.OnPuzzleImpossibleCutscene -= OnCutsceneTrigger;
         }
     }
 
@@ -90,11 +86,8 @@ public class ImpossiblePuzzleUI : MonoBehaviour
             SetTextImmediate();
         }
 
-        // Start countdown if enabled
-        if (showCountdown && countdownText != null)
-        {
-            StartCoroutine(ShowCountdown());
-        }
+        // Auto-hide after some time (since we don't have cutscene trigger)
+        StartCoroutine(AutoHideAfterDelay());
     }
 
     private void SetTextImmediate()
@@ -125,48 +118,13 @@ public class ImpossiblePuzzleUI : MonoBehaviour
         }
     }
 
-    private IEnumerator ShowCountdown()
+    private IEnumerator AutoHideAfterDelay()
     {
-        // Wait a bit before starting countdown
-        yield return new WaitForSeconds(1f);
+        // Wait for player to read
+        yield return new WaitForSeconds(8f);
 
-        if (countdownText != null)
-        {
-            for (int i = 5; i >= 1; i--)
-            {
-                countdownText.text = $"Continuing in {i}...";
-                yield return new WaitForSeconds(1f);
-            }
-            countdownText.text = "Proceeding to next challenge...";
-        }
-    }
-
-    private void OnCutsceneTrigger()
-    {
-        Debug.Log("🎬 Cutscene triggered - hiding impossible message UI");
-
-        // Hide the panel
-        if (impossiblePanel != null)
-            impossiblePanel.SetActive(false);
-
-        isShowing = false;
-
-        // Here you can trigger your cutscene system
-        TriggerCutscene();
-    }
-
-    private void TriggerCutscene()
-    {
-        // Integration point for your cutscene system
-        Debug.Log("🎭 Starting cutscene for level transition...");
-
-        // Example integration points:
-        // CutsceneManager.Instance?.PlayCutscene("KonigsbergSolution");
-        // LevelTransitionManager.Instance?.TransitionToNextLevel();
-        // GameManager.Instance?.ChangeState(GameState.Cutscene);
-
-        // For now, just log that we're ready for the next puzzle
-        Debug.Log("✅ Ready to transition to next puzzle/level");
+        // Hide the panel automatically
+        HideImpossibleMessage();
     }
 
     // Public method to hide panel (can be called from button or other systems)

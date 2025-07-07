@@ -62,7 +62,7 @@ public class PlayerInput : MonoBehaviour
         mouseY = Input.GetAxis("Mouse Y");
 
         // Check if the input is cleared
-        sprintHeld = sprintHeld || Input.GetButtonDown("Sprint");
+        sprintHeld = Input.GetButton("Sprint");
         jumpPressed = jumpPressed || Input.GetButtonDown("Jump");
         activatePressed = activatePressed || Input.GetKeyDown(KeyCode.E);
         primaryShootPressed = primaryShootPressed || Input.GetButtonDown("Fire1");

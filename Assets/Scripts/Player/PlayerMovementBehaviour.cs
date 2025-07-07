@@ -58,7 +58,7 @@ public class PlayerMovementBehaviour : MonoBehaviour
     void GroundCheck()
     {
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckDistance, groundMask);
-        Debug.Log("Grounded: " + isGrounded); // debug log to check if grounded
+       // Debug.Log("Grounded: " + isGrounded); // debug log to check if grounded
     }
 
     public void SetYVelocity(float value)
