@@ -7019,22 +7019,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6062243f2f08ec4489fffefee2197c81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  konigsbergSolutionTimeline: {fileID: 11400000, guid: 2ed5c9a7df2d20c4e82198611a191088, type: 2}
-  nextPuzzleIntroTimeline: {fileID: 0}
-  puzzleTransitionTimeline: {fileID: 0}
-  mainDirector: {fileID: 1497582591}
-  uiDirector: {fileID: 0}
-  allowSkipping: 1
-  skipKey: 32
-  skipHoldTime: 1
-  levelManager: {fileID: 0}
-  gameManager: {fileID: 0}
-  originalCameraPosition: {x: 0, y: 0, z: 0}
-  originalCameraRotation: {x: 0, y: 0, z: 0, w: 0}
-  playerCamera: {fileID: 0}
-  isCutscenePlaying: 0
-  skipTimer: 0
-  currentCutsceneName: 
 --- !u!1 &314425993
 GameObject:
   m_ObjectHideFlags: 0
@@ -14398,8 +14382,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28d625485497302418378f980d5c8151, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  showDebugLogs: 1
-  cutsceneManager: {fileID: 0}
 --- !u!114 &700725895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14412,22 +14394,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6062243f2f08ec4489fffefee2197c81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  konigsbergSolutionTimeline: {fileID: 11400000, guid: ad1f56197ed9cc84989b20fab439e348, type: 2}
-  nextPuzzleIntroTimeline: {fileID: 0}
-  puzzleTransitionTimeline: {fileID: 0}
-  mainDirector: {fileID: 1815119143}
-  uiDirector: {fileID: 0}
-  allowSkipping: 1
-  skipKey: 32
-  skipHoldTime: 1
-  levelManager: {fileID: 810696613}
-  gameManager: {fileID: 1703399161}
-  originalCameraPosition: {x: 0, y: 0, z: 0}
-  originalCameraRotation: {x: 0, y: 0, z: 0, w: 0}
-  playerCamera: {fileID: 659619441}
-  isCutscenePlaying: 0
-  skipTimer: 0
-  currentCutsceneName: 
 --- !u!4 &700725896
 Transform:
   m_ObjectHideFlags: 0
@@ -14968,6 +14934,37 @@ Transform:
   - {fileID: 252921807}
   m_Father: {fileID: 2063877081}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: -90}
+--- !u!1 &734157855
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 734157856}
+  m_Layer: 0
+  m_Name: PuzzleManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &734157856
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734157855}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 492.6667, y: 496.07407, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &739218355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -27785,22 +27782,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6062243f2f08ec4489fffefee2197c81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  konigsbergSolutionTimeline: {fileID: 11400000, guid: ad1f56197ed9cc84989b20fab439e348, type: 2}
-  nextPuzzleIntroTimeline: {fileID: 0}
-  puzzleTransitionTimeline: {fileID: 0}
-  mainDirector: {fileID: 1815119143}
-  uiDirector: {fileID: 1815119143}
-  allowSkipping: 1
-  skipKey: 32
-  skipHoldTime: 1
-  levelManager: {fileID: 810696613}
-  gameManager: {fileID: 1703399161}
-  originalCameraPosition: {x: 0, y: 0, z: 0}
-  originalCameraRotation: {x: 0, y: 0, z: 0, w: 0}
-  playerCamera: {fileID: 0}
-  isCutscenePlaying: 0
-  skipTimer: 0
-  currentCutsceneName: 
 --- !u!4 &1416215617
 Transform:
   m_ObjectHideFlags: 0
@@ -28872,6 +28853,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   requiredLandmasses: 4
   allowBridgeReuse: 0
+  detectionRange: 50
+  autoDetectStartingPosition: 1
   resetDelay: 2
   resetMessage: You returned to a previously visited area. Puzzle reset!
   showDebugInfo: 1
@@ -33220,7 +33203,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1726482174
 RectTransform:
   m_ObjectHideFlags: 0
@@ -34568,7 +34551,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Puzzle 1: 7 Bridges'
+  m_text: 'Puzzle 1: 7 Bridges
+
+    Puzzle 2: What is a Path?'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -34633,7 +34618,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -718.7047, w: 0}
+  m_margin: {x: 0, y: 0, z: -718.7047, w: -114.33716}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -41521,3 +41506,4 @@ SceneRoots:
   - {fileID: 700878909}
   - {fileID: 1416215617}
   - {fileID: 700725896}
+  - {fileID: 734157856}

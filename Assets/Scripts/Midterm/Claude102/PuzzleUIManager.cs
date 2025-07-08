@@ -3,6 +3,7 @@ using TMPro;
 
 /// <summary>
 /// Complete PuzzleUIManager with direct transition support (no cutscene)
+/// HOUR 1.1 FIX: Fixed double puzzle number increments and UI issues
 /// Handles bridge/landmass progress + puzzle transitions with simple text updates
 /// </summary>
 public class PuzzleUIManager : MonoBehaviour
@@ -115,7 +116,6 @@ public class PuzzleUIManager : MonoBehaviour
             statusText.text = message;
     }
 
-
     private void OnPuzzleCompleted()
     {
         UpdateStatusText("🎉 PUZZLE COMPLETED!");
@@ -149,7 +149,6 @@ public class PuzzleUIManager : MonoBehaviour
 
         // Update status for Puzzle 2
         UpdateStatusText("Puzzle 2: Visit all landmasses exactly once!");
-
     }
 
     private void Update()
@@ -217,12 +216,7 @@ public class PuzzleUIManager : MonoBehaviour
     {
         Debug.Log("Impossible puzzle detected - showing discovery message");
 
-        ShowPuzzleTransitionMessage();
-        UpdateStatusText("Mathematical discovery: The puzzle is impossible!");
-    }
-
-    public void ShowPuzzleTransitionMessage()
-    {
+        // Show transition message but don't increment puzzle numbers yet
         if (mainText != null)
         {
             // Get current progress
@@ -235,32 +229,29 @@ public class PuzzleUIManager : MonoBehaviour
                            "This problem founded the field of graph theory!\n\n" +
                            "Preparing next challenge...";
         }
+
+        UpdateStatusText("Mathematical discovery: The puzzle is impossible!");
     }
 
+    // FIXED: Simplified transition method - no double increments
     private void OnTransitionToPuzzle2()
     {
         Debug.Log("Transitioning to Puzzle 2");
-        StartNextPuzzle();
-    }
-    
-    public void StartNextPuzzle()
-    {
-        currentPuzzleNumber++;
+
+        // Set directly to Puzzle 2 (don't increment)
+        currentPuzzleNumber = 2;
 
         // Clear Puzzle 1 specific UI
         ClearPuzzle1UI();
 
-        // Update puzzle UI
+        // Update puzzle UI to show Puzzle 2
         UpdatePuzzleUI();
 
         // Reset progress displays for new puzzle
-        if (currentPuzzleNumber == 2)
-        {
-            UpdateBridgeProgress(0, 0); // Hide bridge progress for Puzzle 2
-            UpdateLandmassProgress(0, 4); // Reset landmass count for Puzzle 2
-        }
+        UpdateBridgeProgress(0, 0); // Hide bridge progress for Puzzle 2
+        UpdateLandmassProgress(0, 4); // Reset landmass count for Puzzle 2
 
-        Debug.Log($"Started Puzzle {currentPuzzleNumber}");
+        Debug.Log("Transition to Puzzle 2 complete - UI set directly");
     }
 
     // === PUZZLE 2 EVENT HANDLERS ===
@@ -328,6 +319,32 @@ public class PuzzleUIManager : MonoBehaviour
     [ContextMenu("Test Puzzle 2 Transition")]
     public void DebugTestPuzzle2Transition()
     {
-        StartNextPuzzle();
+        OnTransitionToPuzzle2();
+    }
+
+    [ContextMenu("Fix Puzzle Number to 1")]
+    public void DebugFixPuzzleNumberTo1()
+    {
+        currentPuzzleNumber = 1;
+        UpdatePuzzleUI();
+        Debug.Log("Manually fixed puzzle number to 1");
+    }
+
+    [ContextMenu("Fix Puzzle Number to 2")]
+    public void DebugFixPuzzleNumberTo2()
+    {
+        currentPuzzleNumber = 2;
+        UpdatePuzzleUI();
+        Debug.Log("Manually fixed puzzle number to 2");
+    }
+
+    [ContextMenu("Show Current Puzzle Info")]
+    public void DebugShowPuzzleInfo()
+    {
+        Debug.Log($"=== PUZZLE UI INFO ===");
+        Debug.Log($"Current Puzzle Number: {currentPuzzleNumber}");
+        Debug.Log($"Subtitle Text: {(subtitleText != null ? subtitleText.text : "NULL")}");
+        Debug.Log($"Main Text Preview: {(mainText != null ? mainText.text.Substring(0, Mathf.Min(50, mainText.text.Length)) + "..." : "NULL")}");
+        Debug.Log("======================");
     }
 }

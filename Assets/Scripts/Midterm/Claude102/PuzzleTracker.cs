@@ -41,9 +41,11 @@ public class PuzzleTracker : MonoBehaviour
         InitializePuzzle();
     }
 
+
+    // ALSO REPLACE the InitializePuzzle() method to fix obsolete warning:
     private void InitializePuzzle()
     {
-        // Find all bridges and landmasses in the scene
+        // FIXED: Use new Unity method instead of obsolete one
         allBridges = FindObjectsByType<BridgeController>(FindObjectsSortMode.None).ToList();
         allLandmasses = FindObjectsByType<LandmassController>(FindObjectsSortMode.None).ToList();
 
@@ -173,7 +175,8 @@ public class PuzzleTracker : MonoBehaviour
         StartDirectTransitionToPuzzle2();
     }
 
-    // NEW: Simple direct transition method
+
+    // REPLACE the StartDirectTransitionToPuzzle2() method in your PuzzleTracker.cs:
     private void StartDirectTransitionToPuzzle2()
     {
         Debug.Log("🔄 Direct Transition: Königsberg → Path puzzle");
@@ -197,15 +200,18 @@ public class PuzzleTracker : MonoBehaviour
         // Step 3: Reset landmasses for Puzzle 2
         SwitchLandmassesToPuzzle2();
 
-        // Step 4: Update UI for Puzzle 2
+        // Step 4: Update UI for Puzzle 2 - FIXED: Don't call StartNextPuzzle, just set UI directly
         PuzzleUIManager uiManager = FindFirstObjectByType<PuzzleUIManager>();
         if (uiManager != null)
         {
-            uiManager.StartNextPuzzle(); // This will update to Puzzle 2
-            uiManager.SetMainText("Welcome to Puzzle 2: Path\n\nVisit all landmasses exactly once.\nYou cannot return to a landmass you've already visited!");
+            // FIXED: Set puzzle number to 2 explicitly, don't increment
+            uiManager.SetCurrentPuzzleNumber(2);
+            uiManager.SetSubtitleText("Puzzle 2: Path");
+            uiManager.SetMainText("🎯 Puzzle 2: Path Challenge\n\nTransitioning from Königsberg puzzle...\n\nDetecting your starting position...");
+            Debug.Log("✅ Set UI to Puzzle 2 directly");
         }
 
-        // Step 5: Trigger transition event
+        // Step 5: Trigger transition event - FIXED: Don't call StartNextPuzzle here
         OnPuzzleTransitionToPuzzle2?.Invoke();
 
         Debug.Log("✅ Direct transition to Puzzle 2 complete!");
