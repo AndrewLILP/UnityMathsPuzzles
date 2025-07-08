@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
 
+/// <summary>
+/// FIXED: PuzzleTracker with proper state management during puzzle transitions
+/// Clears state when disabled to prevent interference with Puzzle 2
+/// </summary>
 public class PuzzleTracker : MonoBehaviour
 {
     [Header("Puzzle Configuration")]
@@ -11,8 +15,8 @@ public class PuzzleTracker : MonoBehaviour
 
     [Header("Impossible Puzzle Detection")]
     [SerializeField] private bool enableImpossibleDetection = true;
-    [SerializeField] private float impossibleDetectionDelay = 3f; // Time to wait before showing "impossible" message
-    [SerializeField] private float transitionDelay = 4f; // Time to wait before transitioning to Puzzle 2
+    [SerializeField] private float impossibleDetectionDelay = 3f;
+    [SerializeField] private float transitionDelay = 4f;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugInfo = true;
@@ -28,24 +32,72 @@ public class PuzzleTracker : MonoBehaviour
     private bool puzzleIsImpossible = false;
     private bool impossibleMessageShown = false;
 
+    // FIXED: Add state tracking for proper lifecycle management
+    private bool isTransitioning = false;
+
     // Events for integration with GameManager/LevelManager
     public System.Action OnPuzzleCompleted;
     public System.Action OnPuzzleFailed;
-    public System.Action OnPuzzleImpossible; // Event for impossible detection
-    public System.Action OnPuzzleTransitionToPuzzle2; // NEW: Direct transition event
-    public System.Action<int, int> OnBridgeProgressChanged; // current, total
-    public System.Action<int, int> OnLandmassProgressChanged; // current, total
+    public System.Action OnPuzzleImpossible;
+    public System.Action OnPuzzleTransitionToPuzzle2;
+    public System.Action<int, int> OnBridgeProgressChanged;
+    public System.Action<int, int> OnLandmassProgressChanged;
 
     private void Start()
     {
         InitializePuzzle();
     }
 
+    /// <summary>
+    /// FIXED: Handle component being disabled - clear state to prevent interference
+    /// </summary>
+    private void OnDisable()
+    {
+        if (showDebugInfo)
+            Debug.Log("🔄 PuzzleTracker disabled - clearing state to prevent interference");
 
-    // ALSO REPLACE the InitializePuzzle() method to fix obsolete warning:
+        ClearInternalState();
+    }
+
+    /// <summary>
+    /// FIXED: Handle component being enabled - reinitialize if needed
+    /// </summary>
+    private void OnEnable()
+    {
+        if (showDebugInfo)
+            Debug.Log("🔄 PuzzleTracker enabled - checking initialization");
+
+        // Don't reinitialize during transitions
+        if (!isTransitioning)
+        {
+            // Reinitialize if we have no bridges/landmasses (could happen after scene changes)
+            if (allBridges.Count == 0 || allLandmasses.Count == 0)
+            {
+                InitializePuzzle();
+            }
+        }
+    }
+
+    /// <summary>
+    /// FIXED: Clear internal state without affecting scene objects
+    /// Used when transitioning to prevent cross-puzzle interference
+    /// </summary>
+    private void ClearInternalState()
+    {
+        crossedBridges.Clear();
+        visitedLandmasses.Clear();
+        puzzleIsImpossible = false;
+        impossibleMessageShown = false;
+
+        // Stop any running coroutines
+        StopAllCoroutines();
+
+        if (showDebugInfo)
+            Debug.Log("✅ PuzzleTracker internal state cleared");
+    }
+
     private void InitializePuzzle()
     {
-        // FIXED: Use new Unity method instead of obsolete one
         allBridges = FindObjectsByType<BridgeController>(FindObjectsSortMode.None).ToList();
         allLandmasses = FindObjectsByType<LandmassController>(FindObjectsSortMode.None).ToList();
 
@@ -55,7 +107,6 @@ public class PuzzleTracker : MonoBehaviour
             Debug.Log($"Required: {requiredBridges} bridges, {requiredLandmasses} landmasses");
         }
 
-        // Validate setup
         if (allBridges.Count < requiredBridges)
         {
             Debug.LogWarning($"Not enough bridges in scene! Found {allBridges.Count}, need {requiredBridges}");
@@ -67,8 +118,20 @@ public class PuzzleTracker : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// FIXED: Only process bridge crossings if this tracker is enabled
+    /// Prevents disabled tracker from interfering with Puzzle 2
+    /// </summary>
     public void OnBridgeCrossed(string bridgeID, LandmassType from, LandmassType to)
     {
+        // FIXED: Early exit if disabled or transitioning
+        if (!enabled || isTransitioning)
+        {
+            if (showDebugInfo)
+                Debug.Log($"⏸️ PuzzleTracker: Ignoring bridge {bridgeID} (disabled={!enabled}, transitioning={isTransitioning})");
+            return;
+        }
+
         if (crossedBridges.Contains(bridgeID))
         {
             if (showDebugInfo)
@@ -81,14 +144,24 @@ public class PuzzleTracker : MonoBehaviour
         if (showProgressUpdates)
             Debug.Log($"Bridge crossed: {bridgeID} ({crossedBridges.Count}/{requiredBridges})");
 
-        // Trigger progress event
         OnBridgeProgressChanged?.Invoke(crossedBridges.Count, requiredBridges);
-
         CheckPuzzleState();
     }
 
+    /// <summary>
+    /// FIXED: Only process landmass visits if this tracker is enabled
+    /// Prevents disabled tracker from interfering with Puzzle 2
+    /// </summary>
     public void OnLandmassVisited(LandmassType landmassType)
     {
+        // FIXED: Early exit if disabled or transitioning
+        if (!enabled || isTransitioning)
+        {
+            if (showDebugInfo)
+                Debug.Log($"⏸️ PuzzleTracker: Ignoring landmass {landmassType} (disabled={!enabled}, transitioning={isTransitioning})");
+            return;
+        }
+
         if (visitedLandmasses.Contains(landmassType))
         {
             if (showDebugInfo)
@@ -101,9 +174,7 @@ public class PuzzleTracker : MonoBehaviour
         if (showProgressUpdates)
             Debug.Log($"Landmass visited: {landmassType} ({visitedLandmasses.Count}/{requiredLandmasses})");
 
-        // Trigger progress event
         OnLandmassProgressChanged?.Invoke(visitedLandmasses.Count, requiredLandmasses);
-
         CheckPuzzleState();
     }
 
@@ -112,21 +183,18 @@ public class PuzzleTracker : MonoBehaviour
         bool bridgesComplete = crossedBridges.Count == requiredBridges;
         bool landmassesComplete = visitedLandmasses.Count == requiredLandmasses;
 
-        // Check for standard completion
         if (bridgesComplete && landmassesComplete)
         {
             CompletePuzzle();
             return;
         }
 
-        // Check for failure (too many bridges)
         if (crossedBridges.Count > requiredBridges)
         {
             FailPuzzle("Too many bridges crossed!");
             return;
         }
 
-        // Check for impossible scenario (Königsberg problem)
         if (enableImpossibleDetection && !puzzleIsImpossible)
         {
             CheckForImpossibleScenario();
@@ -135,9 +203,8 @@ public class PuzzleTracker : MonoBehaviour
 
     private void CheckForImpossibleScenario()
     {
-        // The classic scenario: 6 bridges crossed, all landmasses visited, but 7th bridge is impossible
         bool allLandmassesVisited = visitedLandmasses.Count == requiredLandmasses;
-        bool nearlyAllBridgesCrossed = crossedBridges.Count == (requiredBridges - 1); // 6 out of 7
+        bool nearlyAllBridgesCrossed = crossedBridges.Count == (requiredBridges - 1);
 
         if (allLandmassesVisited && nearlyAllBridgesCrossed)
         {
@@ -151,7 +218,6 @@ public class PuzzleTracker : MonoBehaviour
 
     private IEnumerator HandleImpossibleScenario()
     {
-        // Wait for the detection delay
         yield return new WaitForSeconds(impossibleDetectionDelay);
 
         if (!impossibleMessageShown)
@@ -161,57 +227,73 @@ public class PuzzleTracker : MonoBehaviour
             if (showDebugInfo)
                 Debug.Log("🚫 PUZZLE IMPOSSIBLE: The Seven Bridges of Königsberg cannot be solved!");
 
-            // Trigger UI message event
             OnPuzzleImpossible?.Invoke();
         }
 
-        // Wait additional time for player to read message
         yield return new WaitForSeconds(transitionDelay);
 
         if (showDebugInfo)
             Debug.Log("🔄 Starting direct transition to Puzzle 2...");
 
-        // SIMPLE DIRECT TRANSITION (No cutscene!)
         StartDirectTransitionToPuzzle2();
     }
 
-
-    // REPLACE the StartDirectTransitionToPuzzle2() method in your PuzzleTracker.cs:
+    /// <summary>
+    /// FIXED: Proper transition to Puzzle 2 with complete state management
+    /// </summary>
     private void StartDirectTransitionToPuzzle2()
     {
         Debug.Log("🔄 Direct Transition: Königsberg → Path puzzle");
 
-        // Step 1: Disable Puzzle 1 tracker
-        this.enabled = false;
-        Debug.Log("✅ Disabled PuzzleTracker (Puzzle 1)");
+        // FIXED: Set transitioning flag to prevent event processing
+        isTransitioning = true;
 
-        // Step 2: Enable Puzzle 2 tracker
-        Puzzle2Tracker puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
-        if (puzzle2Tracker != null)
+        // Step 1: Clear this tracker's state BEFORE disabling
+        ClearInternalState();
+
+        // Step 2: Try to use PuzzleSystemManager if available
+        PuzzleSystemManager puzzleManager = FindFirstObjectByType<PuzzleSystemManager>();
+        if (puzzleManager != null)
         {
-            puzzle2Tracker.enabled = true;
-            Debug.Log("✅ Enabled Puzzle2Tracker");
+            puzzleManager.TransitionToPuzzle2();
+            Debug.Log("✅ Used PuzzleSystemManager for transition");
         }
         else
         {
-            Debug.LogWarning("⚠️ Puzzle2Tracker not found!");
+            // Fallback: Manual transition
+            Debug.Log("⚠️ No PuzzleSystemManager found, using manual transition");
+
+            // Step 2: Disable Puzzle 1 tracker
+            this.enabled = false;
+            Debug.Log("✅ Disabled PuzzleTracker (Puzzle 1)");
+
+            // Step 3: Enable Puzzle 2 tracker
+            Puzzle2Tracker puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
+            if (puzzle2Tracker != null)
+            {
+                puzzle2Tracker.enabled = true;
+                Debug.Log("✅ Enabled Puzzle2Tracker");
+            }
+            else
+            {
+                Debug.LogWarning("⚠️ Puzzle2Tracker not found!");
+            }
         }
 
-        // Step 3: Reset landmasses for Puzzle 2
+        // Step 4: Switch landmasses to Puzzle 2 mode
         SwitchLandmassesToPuzzle2();
 
-        // Step 4: Update UI for Puzzle 2 - FIXED: Don't call StartNextPuzzle, just set UI directly
+        // Step 5: Update UI for Puzzle 2
         PuzzleUIManager uiManager = FindFirstObjectByType<PuzzleUIManager>();
         if (uiManager != null)
         {
-            // FIXED: Set puzzle number to 2 explicitly, don't increment
             uiManager.SetCurrentPuzzleNumber(2);
             uiManager.SetSubtitleText("Puzzle 2: Path");
             uiManager.SetMainText("🎯 Puzzle 2: Path Challenge\n\nTransitioning from Königsberg puzzle...\n\nDetecting your starting position...");
             Debug.Log("✅ Set UI to Puzzle 2 directly");
         }
 
-        // Step 5: Trigger transition event - FIXED: Don't call StartNextPuzzle here
+        // Step 6: Trigger transition event
         OnPuzzleTransitionToPuzzle2?.Invoke();
 
         Debug.Log("✅ Direct transition to Puzzle 2 complete!");
@@ -219,27 +301,24 @@ public class PuzzleTracker : MonoBehaviour
 
     private void SwitchLandmassesToPuzzle2()
     {
-        // Reset landmasses
-        LandmassController[] landmasses = FindObjectsOfType<LandmassController>();
+        LandmassController[] landmasses = FindObjectsByType<LandmassController>(FindObjectsSortMode.None);
         foreach (var landmass in landmasses)
         {
             landmass.ResetLandmass();
-            landmass.SetPuzzleMode(2); // Switch to Puzzle 2 mode
+            landmass.SetPuzzleMode(2);
         }
         Debug.Log($"✅ Switched {landmasses.Length} landmasses to Puzzle 2 mode");
 
-        // NEW: Reset bridge cubes to invisible state
         ResetBridgeCubesForPuzzle2();
     }
 
     private void ResetBridgeCubesForPuzzle2()
     {
-        // Find all BridgeCrossingDetector components and reset them
-        BridgeCrossingDetector[] bridgeDetectors = FindObjectsOfType<BridgeCrossingDetector>();
+        BridgeCrossingDetector[] bridgeDetectors = FindObjectsByType<BridgeCrossingDetector>(FindObjectsSortMode.None);
 
         foreach (var detector in bridgeDetectors)
         {
-            detector.ResetBridge(); // This should make them invisible again
+            detector.ResetBridge();
         }
 
         Debug.Log($"✅ Reset {bridgeDetectors.Length} bridge crossing detectors to invisible state");
@@ -252,11 +331,10 @@ public class PuzzleTracker : MonoBehaviour
 
         OnPuzzleCompleted?.Invoke();
 
-        // Integrate with your existing systems
         LevelManager levelManager = FindFirstObjectByType<LevelManager>();
         if (levelManager != null)
         {
-            levelManager.EndLevel(); // Use normal EndLevel for traditional completion
+            levelManager.EndLevel();
         }
     }
 
@@ -268,26 +346,26 @@ public class PuzzleTracker : MonoBehaviour
         OnPuzzleFailed?.Invoke();
     }
 
+    /// <summary>
+    /// FIXED: Enhanced reset with proper state management
+    /// </summary>
     public void ResetPuzzle()
     {
         if (showDebugInfo)
             Debug.Log("Resetting puzzle...");
 
-        crossedBridges.Clear();
-        visitedLandmasses.Clear();
-        puzzleIsImpossible = false;
-        impossibleMessageShown = false;
+        // Clear transitioning flag if set
+        isTransitioning = false;
 
-        // Stop any running impossible scenario coroutines
-        StopAllCoroutines();
+        // Clear internal state
+        ClearInternalState();
 
-        // Reset all bridges
+        // Reset all scene objects
         foreach (var bridge in allBridges)
         {
             bridge.ResetBridge();
         }
 
-        // Reset all landmasses
         foreach (var landmass in allLandmasses)
         {
             landmass.ResetLandmass();
@@ -309,11 +387,15 @@ public class PuzzleTracker : MonoBehaviour
     public bool IsPuzzleComplete => crossedBridges.Count == requiredBridges && visitedLandmasses.Count == requiredLandmasses;
     public bool IsPuzzleImpossible => puzzleIsImpossible;
 
-    // Debug method to print current status
+    // FIXED: Add state checking methods
+    public bool IsTransitioning => isTransitioning;
+
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     public void PrintPuzzleStatus()
     {
         Debug.Log($"=== PUZZLE STATUS ===");
+        Debug.Log($"Enabled: {enabled}");
+        Debug.Log($"Transitioning: {isTransitioning}");
         Debug.Log($"Bridges: {crossedBridges.Count}/{requiredBridges}");
         Debug.Log($"Landmasses: {visitedLandmasses.Count}/{requiredLandmasses}");
         Debug.Log($"Crossed bridges: {string.Join(", ", crossedBridges)}");
@@ -322,7 +404,6 @@ public class PuzzleTracker : MonoBehaviour
         Debug.Log($"Impossible: {IsPuzzleImpossible}");
     }
 
-    // Manual trigger for testing
     [ContextMenu("Trigger Impossible Scenario")]
     public void DebugTriggerImpossible()
     {
@@ -333,17 +414,14 @@ public class PuzzleTracker : MonoBehaviour
         }
     }
 
-    // NEW: Quick test method to simulate the impossible scenario immediately
     [ContextMenu("Force Test Impossible (Instant)")]
     public void ForceTestImpossible()
     {
-        // Simulate crossing 6 bridges and visiting all landmasses
         for (int i = 0; i < 6; i++)
         {
             OnBridgeCrossed($"TestBridge{i}", LandmassType.LandmassA, LandmassType.LandmassB);
         }
 
-        // Visit all required landmasses
         OnLandmassVisited(LandmassType.LandmassA);
         OnLandmassVisited(LandmassType.LandmassB);
         OnLandmassVisited(LandmassType.LandmassC);

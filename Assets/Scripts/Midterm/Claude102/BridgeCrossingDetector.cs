@@ -2,29 +2,14 @@
 using System.Collections;
 
 /// <summary>
-/// Bridge Crossing Detector - Place on invisible cubes in the middle of bridges
-/// 
-/// SETUP INSTRUCTIONS:
-/// 1. Create a Cube GameObject positioned in the middle of your bridge
-/// 2. Set Box Collider "Is Trigger" = TRUE
-/// 3. DISABLE the MeshRenderer component (makes cube invisible initially)
-/// 4. Add this BridgeCrossingDetector script to the cube
-/// 5. Assign the cube GameObject itself to the "Bridge Cube" field in inspector
-/// 6. Set "Block Delay" time (2f recommended - gives player time to pass through)
-/// 7. Ensure your player GameObject has the "Player" tag
-/// 
-/// BEHAVIOR:
-/// - Invisible cube detects when player crosses bridge
-/// - After delay: cube becomes visible and solid (blocks return path)
-/// - Notifies PuzzleTracker of bridge crossing immediately
-/// - Uses the GameObject name as the bridge ID
+/// FIXED: Bridge Crossing Detector with proper Observer pattern state management
+/// Only notifies ENABLED puzzle trackers to prevent cross-puzzle interference
 /// </summary>
-
 public class BridgeCrossingDetector : MonoBehaviour
 {
     [Header("Bridge Configuration")]
-    [SerializeField] private GameObject bridgeCube; // Reference to this cube GameObject
-    [SerializeField] private float blockDelay = 2f; // Time to wait before blocking (allows player to pass through)
+    [SerializeField] private GameObject bridgeCube;
+    [SerializeField] private float blockDelay = 2f;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugInfo = true;
@@ -42,16 +27,9 @@ public class BridgeCrossingDetector : MonoBehaviour
 
     private void Initialize()
     {
-        // Get required components
         meshRenderer = GetComponent<MeshRenderer>();
         boxCollider = GetComponent<BoxCollider>();
         puzzleTracker = FindFirstObjectByType<PuzzleTracker>();
-
-        // Validation
-        if (puzzleTracker == null)
-        {
-            Debug.LogError($"PuzzleTracker not found! Bridge {name} cannot function properly.");
-        }
 
         if (meshRenderer == null)
         {
@@ -63,10 +41,8 @@ public class BridgeCrossingDetector : MonoBehaviour
             Debug.LogError($"BoxCollider not found on {name}! Add a BoxCollider component.");
         }
 
-        // Set bridge ID from GameObject name
         bridgeID = gameObject.name;
 
-        // Auto-assign bridge cube if not set
         if (bridgeCube == null)
         {
             bridgeCube = gameObject;
@@ -74,7 +50,6 @@ public class BridgeCrossingDetector : MonoBehaviour
                 Debug.Log($"Auto-assigned bridge cube for {bridgeID}");
         }
 
-        // Ensure proper initial setup
         SetupInitialState();
 
         if (showDebugInfo)
@@ -83,13 +58,12 @@ public class BridgeCrossingDetector : MonoBehaviour
 
     private void SetupInitialState()
     {
-        // Make sure we start invisible and as trigger
         if (meshRenderer != null)
-            meshRenderer.enabled = false; // Invisible initially
+            meshRenderer.enabled = false;
 
         if (boxCollider != null)
         {
-            boxCollider.isTrigger = true; // Trigger for detection
+            boxCollider.isTrigger = true;
         }
 
         if (showDebugInfo)
@@ -98,7 +72,6 @@ public class BridgeCrossingDetector : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Only respond to player and only if not already crossed
         if (other.CompareTag("Player") && !hasBeenCrossed)
         {
             CrossBridge();
@@ -117,28 +90,53 @@ public class BridgeCrossingDetector : MonoBehaviour
         if (showDebugInfo)
             Debug.Log($"🌉 Player crossed bridge: {bridgeID} - blocking in {blockDelay} seconds");
 
-        // Notify puzzle tracker immediately
-        if (puzzleTracker != null)
+        // FIXED: Only notify ENABLED puzzle trackers (Observer Pattern with State Management)
+        NotifyActivePuzzleTrackers();
+
+        StartCoroutine(DelayedBlockReturnPath());
+    }
+
+    /// <summary>
+    /// FIXED: Notify only the currently active puzzle tracker
+    /// This prevents disabled trackers from receiving events (proper Observer pattern)
+    /// </summary>
+    private void NotifyActivePuzzleTrackers()
+    {
+        // Check Puzzle 1 tracker (original)
+        if (puzzleTracker != null && puzzleTracker.enabled)
         {
             puzzleTracker.OnBridgeCrossed(bridgeID, LandmassType.LandmassA, LandmassType.LandmassB);
+            if (showDebugInfo)
+                Debug.Log($"✅ Notified Puzzle 1 tracker: {bridgeID}");
         }
 
-        // Start delayed blocking coroutine
-        StartCoroutine(DelayedBlockReturnPath());
+        // Check Puzzle 2 tracker (if it needs bridge notifications)
+        // Note: Puzzle 2 might not need bridge tracking, but bridges still block paths
+        Puzzle2Tracker puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
+        if (puzzle2Tracker != null && puzzle2Tracker.enabled)
+        {
+            // Puzzle 2 doesn't track bridges for completion, but bridges still block
+            if (showDebugInfo)
+                Debug.Log($"✅ Puzzle 2 active - bridge {bridgeID} will still block return path");
+        }
+
+        // If no active trackers found
+        if ((puzzleTracker == null || !puzzleTracker.enabled) &&
+            (puzzle2Tracker == null || !puzzle2Tracker.enabled))
+        {
+            if (showDebugInfo)
+                Debug.LogWarning($"⚠️ No active puzzle trackers found for bridge {bridgeID}");
+        }
     }
 
     private System.Collections.IEnumerator DelayedBlockReturnPath()
     {
-        // Wait for specified delay to allow player to pass through
         yield return new WaitForSeconds(blockDelay);
-
-        // Now block the return path
         BlockReturnPath();
     }
 
     private void BlockReturnPath()
     {
-        // Enable visual (make cube visible)
         if (meshRenderer != null)
         {
             meshRenderer.enabled = true;
@@ -146,7 +144,6 @@ public class BridgeCrossingDetector : MonoBehaviour
                 Debug.Log($"🚫 {bridgeID}: Cube now visible after delay");
         }
 
-        // Make collider solid (blocks movement)
         if (boxCollider != null)
         {
             boxCollider.isTrigger = false;
@@ -155,35 +152,35 @@ public class BridgeCrossingDetector : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// FIXED: Reset bridge to initial state
+    /// Used when transitioning between puzzles
+    /// </summary>
     public void ResetBridge()
     {
         hasBeenCrossed = false;
 
-        // Stop any running delayed blocking coroutines
         StopAllCoroutines();
 
-        // Return to invisible trigger state
         if (meshRenderer != null)
-            meshRenderer.enabled = false; // Make invisible
+            meshRenderer.enabled = false;
 
         if (boxCollider != null)
-            boxCollider.isTrigger = true; // Make it a trigger again
+            boxCollider.isTrigger = true;
 
         if (showDebugInfo)
             Debug.Log($"{bridgeID}: Bridge reset to invisible trigger state");
     }
 
-    // Public properties for external access
+    // Public properties
     public bool HasBeenCrossed => hasBeenCrossed;
     public string BridgeID => bridgeID;
 
-    // Validation method for setup checking
     [ContextMenu("Validate Setup")]
     public void ValidateSetup()
     {
         Debug.Log($"=== BRIDGE SETUP VALIDATION: {name} ===");
 
-        // Check components
         MeshRenderer mr = GetComponent<MeshRenderer>();
         BoxCollider bc = GetComponent<BoxCollider>();
 
@@ -200,13 +197,14 @@ public class BridgeCrossingDetector : MonoBehaviour
         Debug.Log($"Bridge ID: {bridgeID}");
         Debug.Log($"Block Delay: {blockDelay} seconds");
 
-        // Check for player in scene
         GameObject player = GameObject.FindWithTag("Player");
         Debug.Log($"Player found in scene: {player != null}");
 
-        // Check for PuzzleTracker
-        PuzzleTracker tracker = FindFirstObjectByType<PuzzleTracker>();
-        Debug.Log($"PuzzleTracker found: {tracker != null}");
+        // Check for active puzzle trackers
+        PuzzleTracker tracker1 = FindFirstObjectByType<PuzzleTracker>();
+        Puzzle2Tracker tracker2 = FindFirstObjectByType<Puzzle2Tracker>();
+        Debug.Log($"Puzzle 1 Tracker found: {tracker1 != null}, Enabled: {(tracker1 != null ? tracker1.enabled : false)}");
+        Debug.Log($"Puzzle 2 Tracker found: {tracker2 != null}, Enabled: {(tracker2 != null ? tracker2.enabled : false)}");
 
         Debug.Log("===============================");
     }

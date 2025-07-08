@@ -14943,6 +14943,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 734157856}
+  - component: {fileID: 734157857}
   m_Layer: 0
   m_Name: PuzzleManager
   m_TagString: Untagged
@@ -14958,13 +14959,28 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 734157855}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 492.6667, y: 496.07407, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 474.06168, y: 480.6941, z: -45.544083}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1348555268}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &734157857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734157855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88661fe70a7c3c048a47378b164067d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startingPuzzle: 0
+  autoManagePuzzleSystems: 1
+  showDebugInfo: 1
 --- !u!1001 &739218355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26280,6 +26296,7 @@ Transform:
   - {fileID: 313530819}
   - {fileID: 150253617}
   - {fileID: 1459819175}
+  - {fileID: 734157856}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1356336452
@@ -28852,7 +28869,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   requiredLandmasses: 4
-  allowBridgeReuse: 0
   detectionRange: 50
   autoDetectStartingPosition: 1
   resetDelay: 2
@@ -41506,4 +41522,3 @@ SceneRoots:
   - {fileID: 700878909}
   - {fileID: 1416215617}
   - {fileID: 700725896}
-  - {fileID: 734157856}

@@ -1,14 +1,18 @@
 ﻿using UnityEngine;
 
+/// <summary>
+/// FIXED: LandmassController with proper Strategy pattern state management
+/// Only notifies the currently ACTIVE puzzle system to prevent cross-puzzle interference
+/// </summary>
 public class LandmassController : MonoBehaviour
 {
     [Header("Landmass Configuration")]
     [SerializeField] private LandmassType landmassType;
-    [SerializeField] private string landmassName; // Optional friendly name
+    [SerializeField] private string landmassName;
 
     [Header("Visual Feedback")]
-    [SerializeField] private GameObject visitedIndicator; // Optional visual indicator when visited
-    [SerializeField] private Material visitedMaterial; // Optional material change when visited
+    [SerializeField] private GameObject visitedIndicator;
+    [SerializeField] private Material visitedMaterial;
     [SerializeField] private MeshRenderer meshRenderer;
 
     [Header("Puzzle Mode")]
@@ -24,12 +28,11 @@ public class LandmassController : MonoBehaviour
     private PuzzleTracker puzzleTracker;
     private Puzzle2Tracker puzzle2Tracker;
 
-    // Track which puzzle system is active
-    private bool isUsingPuzzle2 = false;
+    // FIXED: Clear strategy - determine active puzzle at visit time, not continuously
+    private bool isCurrentlyUsingPuzzle2 = false;
 
     private void Start()
     {
-        // Get references to both puzzle systems
         puzzleTracker = FindFirstObjectByType<PuzzleTracker>();
         puzzle2Tracker = FindFirstObjectByType<Puzzle2Tracker>();
 
@@ -38,46 +41,41 @@ public class LandmassController : MonoBehaviour
             Debug.LogError($"PuzzleTracker not found! Landmass {landmassType} cannot function properly.");
         }
 
-        // Store original material
         if (meshRenderer != null)
             originalMaterial = meshRenderer.material;
 
-        // Hide visited indicator initially
         if (visitedIndicator != null)
             visitedIndicator.SetActive(false);
 
-        // Auto-generate name if not set
         if (string.IsNullOrEmpty(landmassName))
             landmassName = landmassType.ToString();
 
-        // Check which puzzle system should be active
-        CheckActivePuzzleSystem();
+        // Set initial active puzzle system
+        DetermineActivePuzzleSystem();
     }
 
-    private void Update()
-    {
-        // Continuously check which puzzle system is active
-        CheckActivePuzzleSystem();
-    }
-
-    // Determine which puzzle system is currently active
-    private void CheckActivePuzzleSystem()
+    /// <summary>
+    /// FIXED: Determine which puzzle system is currently active
+    /// Strategy Pattern - choose the right strategy based on current state
+    /// </summary>
+    private void DetermineActivePuzzleSystem()
     {
         bool shouldUsePuzzle2 = false;
 
-        // Check if Puzzle1 is disabled and Puzzle2 is enabled
+        // Strategy Selection Logic
         if (puzzleTracker != null && puzzle2Tracker != null)
         {
+            // If Puzzle 1 is disabled and Puzzle 2 is enabled
             shouldUsePuzzle2 = !puzzleTracker.enabled && puzzle2Tracker.enabled;
         }
         else if (puzzleTracker == null && puzzle2Tracker != null)
         {
-            // If only Puzzle2 exists
+            // If only Puzzle 2 exists
             shouldUsePuzzle2 = true;
         }
         else if (puzzle2Tracker != null && puzzle2Tracker.enabled)
         {
-            // If Puzzle2 is explicitly enabled
+            // If Puzzle 2 is explicitly enabled
             shouldUsePuzzle2 = true;
         }
 
@@ -87,13 +85,13 @@ public class LandmassController : MonoBehaviour
             shouldUsePuzzle2 = true;
         }
 
-        // Switch puzzle systems if needed
-        if (shouldUsePuzzle2 != isUsingPuzzle2)
+        // Update strategy if changed
+        if (shouldUsePuzzle2 != isCurrentlyUsingPuzzle2)
         {
-            isUsingPuzzle2 = shouldUsePuzzle2;
+            isCurrentlyUsingPuzzle2 = shouldUsePuzzle2;
             if (showDebugInfo)
             {
-                Debug.Log($"🔄 {landmassName}: Switched to {(isUsingPuzzle2 ? "Puzzle 2" : "Puzzle 1")} system");
+                Debug.Log($"🔄 {landmassName}: Switched to {(isCurrentlyUsingPuzzle2 ? "Puzzle 2" : "Puzzle 1")} system");
             }
         }
     }
@@ -102,58 +100,80 @@ public class LandmassController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            if (isUsingPuzzle2)
+            // FIXED: Determine active puzzle system at visit time (not continuously)
+            DetermineActivePuzzleSystem();
+
+            if (isCurrentlyUsingPuzzle2)
             {
-                // Puzzle 2 logic - check for revisit
                 HandlePuzzle2Visit();
             }
             else
             {
-                // Original Puzzle 1 logic
                 HandlePuzzle1Visit();
             }
         }
     }
 
-    // Handle visit for Puzzle 1 (original logic)
+    /// <summary>
+    /// FIXED: Handle visit for Puzzle 1 - only notify if Puzzle 1 is enabled
+    /// </summary>
     private void HandlePuzzle1Visit()
     {
+        // Double-check that Puzzle 1 is actually enabled
+        if (puzzleTracker == null || !puzzleTracker.enabled)
+        {
+            if (showDebugInfo)
+                Debug.LogWarning($"⚠️ {landmassName}: Puzzle 1 visit attempted but PuzzleTracker is disabled!");
+            return;
+        }
+
         if (!hasBeenVisited)
         {
-            VisitLandmass();
+            VisitLandmass("Puzzle 1");
 
             // Notify Puzzle 1 tracker
-            if (puzzleTracker != null)
-            {
-                puzzleTracker.OnLandmassVisited(landmassType);
-            }
+            puzzleTracker.OnLandmassVisited(landmassType);
+        }
+        else
+        {
+            if (showDebugInfo)
+                Debug.Log($"{landmassName}: Already visited in Puzzle 1");
         }
     }
 
-    // Handle visit for Puzzle 2 (no revisit allowed)
+    /// <summary>
+    /// FIXED: Handle visit for Puzzle 2 - only notify if Puzzle 2 is enabled
+    /// </summary>
     private void HandlePuzzle2Visit()
     {
-        if (puzzle2Tracker != null)
+        // Double-check that Puzzle 2 is actually enabled
+        if (puzzle2Tracker == null || !puzzle2Tracker.enabled)
         {
-            // Always notify Puzzle2Tracker - it will handle revisit logic
-            puzzle2Tracker.OnLandmassVisited(landmassType);
+            if (showDebugInfo)
+                Debug.LogWarning($"⚠️ {landmassName}: Puzzle 2 visit attempted but Puzzle2Tracker is disabled!");
+            return;
         }
 
-        // Update visual state for Puzzle 2
+        // ALWAYS notify Puzzle2Tracker - it will handle revisit logic internally
+        puzzle2Tracker.OnLandmassVisited(landmassType);
+
+        // Update visual state for Puzzle 2 (only if not already visited)
         if (!hasBeenVisited)
         {
-            VisitLandmass();
+            VisitLandmass("Puzzle 2");
         }
     }
 
-    private void VisitLandmass()
+    /// <summary>
+    /// FIXED: Mark landmass as visited with proper puzzle context
+    /// </summary>
+    private void VisitLandmass(string puzzleContext)
     {
         hasBeenVisited = true;
 
         if (showDebugInfo)
         {
-            string puzzleSystem = isUsingPuzzle2 ? "Puzzle 2" : "Puzzle 1";
-            Debug.Log($"Player visited {landmassName} ({landmassType}) - {puzzleSystem}");
+            Debug.Log($"Player visited {landmassName} ({landmassType}) - {puzzleContext}");
         }
 
         // Visual feedback
@@ -169,6 +189,9 @@ public class LandmassController : MonoBehaviour
             meshRenderer.material = visitedMaterial;
     }
 
+    /// <summary>
+    /// FIXED: Reset landmass with proper puzzle context tracking
+    /// </summary>
     public void ResetLandmass()
     {
         hasBeenVisited = false;
@@ -179,34 +202,20 @@ public class LandmassController : MonoBehaviour
         if (meshRenderer != null && originalMaterial != null)
             meshRenderer.material = originalMaterial;
 
+        // Re-determine active puzzle system after reset
+        DetermineActivePuzzleSystem();
+
         if (showDebugInfo)
         {
-            string puzzleSystem = isUsingPuzzle2 ? "Puzzle 2" : "Puzzle 1";
+            string puzzleSystem = isCurrentlyUsingPuzzle2 ? "Puzzle 2" : "Puzzle 1";
             Debug.Log($"Landmass {landmassName} has been reset - {puzzleSystem}");
         }
     }
 
-    // Force switch to specific puzzle system (for debugging)
-    public void ForceSwitchToPuzzle2()
-    {
-        isUsingPuzzle2 = true;
-        puzzleMode = 2;
-        ResetLandmass(); // Reset state when switching
-
-        if (showDebugInfo)
-            Debug.Log($"🔄 {landmassName}: Forced switch to Puzzle 2");
-    }
-
-    public void ForceSwitchToPuzzle1()
-    {
-        isUsingPuzzle2 = false;
-        puzzleMode = 1;
-        ResetLandmass(); // Reset state when switching
-
-        if (showDebugInfo)
-            Debug.Log($"🔄 {landmassName}: Forced switch to Puzzle 1");
-    }
-
+    /// <summary>
+    /// FIXED: Force switch to specific puzzle system
+    /// Used during puzzle transitions
+    /// </summary>
     public void SetPuzzleMode(int puzzleNumber)
     {
         puzzleMode = puzzleNumber;
@@ -214,28 +223,30 @@ public class LandmassController : MonoBehaviour
         if (showDebugInfo)
             Debug.Log($"🔄 {landmassName}: Set to Puzzle {puzzleNumber} mode");
 
-        // Force check which system to use
-        CheckActivePuzzleSystem();
+        // Force re-determination of active system
+        DetermineActivePuzzleSystem();
     }
 
     // Public getters
     public bool HasBeenVisited => hasBeenVisited;
     public LandmassType LandmassType => landmassType;
     public string LandmassName => landmassName;
-    public bool IsUsingPuzzle2 => isUsingPuzzle2;
+    public bool IsUsingPuzzle2 => isCurrentlyUsingPuzzle2;
     public int PuzzleMode => puzzleMode;
 
     // Context menu for debugging
     [ContextMenu("Switch to Puzzle 2")]
     private void DebugSwitchToPuzzle2()
     {
-        ForceSwitchToPuzzle2();
+        SetPuzzleMode(2);
+        ResetLandmass();
     }
 
     [ContextMenu("Switch to Puzzle 1")]
     private void DebugSwitchToPuzzle1()
     {
-        ForceSwitchToPuzzle1();
+        SetPuzzleMode(1);
+        ResetLandmass();
     }
 
     [ContextMenu("Debug Current State")]
@@ -245,7 +256,7 @@ public class LandmassController : MonoBehaviour
         Debug.Log($"Landmass Type: {landmassType}");
         Debug.Log($"Has Been Visited: {hasBeenVisited}");
         Debug.Log($"Puzzle Mode: {puzzleMode}");
-        Debug.Log($"Using Puzzle 2: {isUsingPuzzle2}");
+        Debug.Log($"Currently Using Puzzle 2: {isCurrentlyUsingPuzzle2}");
         Debug.Log($"PuzzleTracker Found: {puzzleTracker != null}");
         Debug.Log($"Puzzle2Tracker Found: {puzzle2Tracker != null}");
 
