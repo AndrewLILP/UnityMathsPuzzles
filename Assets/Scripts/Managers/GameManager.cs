@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour
             case GameState.LevelStart:
                 InitiateLevel();
                 break;
-            
+
             case GameState.LevelIn:
                 RunLevel();
                 break;
@@ -69,14 +69,14 @@ public class GameManager : MonoBehaviour
             case GameState.LevelEnd:
                 CompleteLevel();
                 break;
-            
+
             case GameState.GameOver:
                 GameOver();
                 break;
-            
+
             case GameState.GameEnd:
                 GameEnd();
-            
+
                 break;
 
         }
@@ -101,38 +101,11 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game State: Level In");
     }
-    // GameManager.cs - Replace the CompleteLevel method
 
     private void CompleteLevel()
     {
         Debug.Log("Game State: Level End");
-
-        // 🔧 FIX: Add bounds checking before incrementing
-        if (currentLevelIndex + 1 < levels.Length)
-        {
-            // Safe to go to next level
-            currentLevelIndex++;
-            ChangeState(GameState.LevelStart, levels[currentLevelIndex]);
-        }
-        else
-        {
-            // No more levels - game is complete
-            Debug.Log("All levels completed! Starting Game End sequence.");
-            ChangeState(GameState.GameEnd, currentLevel);
-        }
-    }
-
-    // 🆕 NEW: Add method for puzzle-specific game over
-    public void TriggerGameOver(string reason)
-    {
-        Debug.Log($"Game Over triggered: {reason}");
-        ChangeState(GameState.GameOver, currentLevel);
-    }
-
-    // 🆕 NEW: Add method to check if this is the final level
-    public bool IsFinalLevel()
-    {
-        return currentLevelIndex >= levels.Length - 1;
+        ChangeState(GameState.LevelStart, levels[++currentLevelIndex]);
     }
 
     private void GameEnd()
@@ -147,13 +120,13 @@ public class GameManager : MonoBehaviour
 
     private void OnCanvasGroupChanged()
     {
-        
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public enum GameState
