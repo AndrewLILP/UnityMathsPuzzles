@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 3
   tags:
   - Ground
+  - Wall
+  - Obstacle
+  - Enemy
+  - Builder
   layers:
   - Default
   - TransparentFX
