@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class LessonNotes : MonoBehaviour
 {
+    /// <summary>
+    /// Keycard ideas for Project (Midterm) - 
+    /// shoot keycards as projectiles to open doors,
+    /// use keycards to open doors as a collision trigger,
+    /// 
+    /// </summary>
     // Lesson 10 Notes:
     // modified files:
     // Trigger.cs - added UI

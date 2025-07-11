@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class Keycard : MonoBehaviour
 {
+    // could make as a singleton
     private KeycardManager keycardManager;
     private void Start()
     {
         keycardManager = FindAnyObjectByType<KeycardManager>();
+        
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -16,6 +18,7 @@ public class Keycard : MonoBehaviour
         {
             keycardManager.firstkeycard = true; // Set the first keycard to true
             Destroy(gameObject); // Destroy the keycard object
+            // object pooling for many keycards
         }
     }
 }
