@@ -207,7 +207,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &12901146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3333,7 +3333,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 115.60242, y: 0, z: -27.662476, w: -57.378296}
+  m_margin: {x: 76.314575, y: 0, z: -27.662476, w: -57.378296}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -24188,7 +24188,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1054740514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29530,7 +29530,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1348555268}
   m_Layer: 0
-  m_Name: Managers
+  m_Name: Managers-----------------------------
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -40595,7 +40595,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1871910343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42996,7 +42996,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 480d731abfa5e674892555fb35bd15fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  endingLevel: {fileID: 2058866632}
+  endingLevel: {fileID: 2030812535}
 --- !u!65 &1996213125
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -43080,7 +43080,7 @@ Transform:
   m_GameObject: {fileID: 1996213123}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7096604, z: -0, w: 0.7045439}
-  m_LocalPosition: {x: 78.75, y: 2.63, z: 43.4}
+  m_LocalPosition: {x: 78.75, y: 2.63, z: 49.53}
   m_LocalScale: {x: 1, y: 5, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -43938,7 +43938,7 @@ MonoBehaviour:
   onLevelStart:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 482502590}
+      - m_Target: {fileID: 596497993}
         m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
         m_MethodName: SetActive
         m_Mode: 6
@@ -43948,7 +43948,7 @@ MonoBehaviour:
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 1
+          m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 1065275880}
         m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
@@ -43962,7 +43962,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
-      - m_Target: {fileID: 596497993}
+      - m_Target: {fileID: 482502590}
         m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
         m_MethodName: SetActive
         m_Mode: 6
@@ -43976,19 +43976,7 @@ MonoBehaviour:
         m_CallState: 2
   onLevelEnd:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1065275880}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1001 &2033223795
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44599,7 +44587,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd18822f70ac18048b353b36f4bc5d4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isFinalLevel: 1
+  isFinalLevel: 0
   onLevelStart:
     m_PersistentCalls:
       m_Calls:
